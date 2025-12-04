@@ -141,15 +141,51 @@ def create_chunks_from_report(report_record: Dict[str, Any]) -> List[ReportChunk
             metadata={'source': 'learningStyle'}
         ))
     
-    # 선호 이미지 유형
+    # 선호도 반응 검사 결과
     preference_data = report_data.get('preferenceData', {})
     if preference_data:
+        # 선호도 요약
         chunks.append(ReportChunk(
             anp_seq=anp_seq, language_code=lang,
-            chunk_type='preference',
-            content=f"{pname}님의 1순위 선호 유형: {preference_data.get('tdname1', '')} ({preference_data.get('rrate1', 0)}%). 설명: {preference_data.get('exp1', '')}",
+            chunk_type='preference_summary',
+            content=f"[선호도] {pname}님의 선호도 반응 검사 결과 요약:\n전체 반응률: {preference_data.get('total_response_rate', 0)}%\n(전체 {preference_data.get('total_count', 0)}개 중 {preference_data.get('response_count', 0)}개 이미지에 반응)",
             metadata={'source': 'preferenceData'}
         ))
+
+        # 1순위 선호 성향
+        chunks.append(ReportChunk(
+            anp_seq=anp_seq, language_code=lang,
+            chunk_type='preference_top',
+            content=f"[선호도] {pname}님의 1순위 선호 성향: {preference_data.get('tdname1', '')} (선호도: {preference_data.get('rrate1', 0)}%)\n설명: {preference_data.get('exp1', '')}",
+            metadata={'source': 'preferenceData', 'rank': 1}
+        ))
+
+        # 2순위 선호 성향
+        if preference_data.get('tdname2'):
+            chunks.append(ReportChunk(
+                anp_seq=anp_seq, language_code=lang,
+                chunk_type='preference_top',
+                content=f"[선호도] {pname}님의 2순위 선호 성향: {preference_data.get('tdname2', '')} (선호도: {preference_data.get('rrate2', 0)}%)\n설명: {preference_data.get('exp2', '')}",
+                metadata={'source': 'preferenceData', 'rank': 2}
+            ))
+
+        # 3순위 선호 성향
+        if preference_data.get('tdname3'):
+            chunks.append(ReportChunk(
+                anp_seq=anp_seq, language_code=lang,
+                chunk_type='preference_top',
+                content=f"[선호도] {pname}님의 3순위 선호 성향: {preference_data.get('tdname3', '')} (선호도: {preference_data.get('rrate3', 0)}%)\n설명: {preference_data.get('exp3', '')}",
+                metadata={'source': 'preferenceData', 'rank': 3}
+            ))
+            
+        # 선호 성향 기반 추천 직업 (데이터에 있는 경우)
+        if preference_data.get('recommend_jobs'):
+             chunks.append(ReportChunk(
+                anp_seq=anp_seq, language_code=lang,
+                chunk_type='preference_job',
+                content=f"[선호도] {pname}님의 선호 성향 기반 추천 직업:\n{preference_data.get('recommend_jobs', '')}",
+                metadata={'source': 'preferenceData'}
+            ))
     
     return chunks
 

@@ -40,6 +40,7 @@ prompt = ChatPromptTemplate.from_messages([
 
 📋 **용어 구분**
 - "성향" = [성향] 태그가 붙은 내용만 (예: 진취형, 창조형, 제작형 등)
+- "선호도" 또는 "선호 성향" = [선호도] 태그가 붙은 내용만 (이미지 반응 검사 결과)
 - "사고력" = [사고력] 태그가 붙은 내용만 (예: 창의적사고력, 수직적사고력 등)
 - "역량" 또는 "재능" = [역량] 태그가 붙은 내용만
 - "직업" = [직업] 태그가 붙은 내용만
@@ -49,6 +50,12 @@ prompt = ChatPromptTemplate.from_messages([
 2. 해당 태그의 내용을 그대로 사용하여 답변하세요
 3. 구체적인 이름, 점수, 순위 등을 정확히 언급하세요
 4. 친근하고 공감적인 톤을 유지하세요
+
+📝 **작문 요청 시 (예: 자기소개서, 면접 답변)**
+- **단순 나열이 아닌, 완성된 글의 형태로 작성하세요.**
+- **자기소개서**: [성격의 장단점], [직무 역량], [입사 후 포부] 등 소제목을 나누어 구체적으로 작성하세요.
+- **면접 답변**: 두괄식으로 답변하고, 검사 결과의 구체적인 근거(성향, 역량 등)를 들어 설명하세요.
+- 검사 결과의 문장을 활용하되, 자연스럽게 연결하여 풍성한 문장으로 만드세요.
 
 ❌ **절대 하지 말 것**
 - 일반적인 성향/사고력 설명을 만들어내지 마세요
@@ -167,6 +174,20 @@ class CustomRetriever:
         if '학습' in question or '공부' in question:
             filters.extend(['learning_style'])
             print(f"🔍 키워드 매칭: '학습' 관련")
+            
+        if '선호' in question or '이미지' in question or '반응' in question:
+            filters.extend(['preference_summary', 'preference_top', 'preference_job'])
+            print(f"🔍 키워드 매칭: '선호도' 관련")
+            
+        # 자기소개서/면접 관련 - 종합적인 정보 필요
+        if '자기소개' in question or '자소서' in question or '면접' in question:
+            filters.extend([
+                'top_tendency', 'top_tendency_explain', 
+                'thinking_main', 
+                'talent', 
+                'suitable_job', 'competency_job'
+            ])
+            print(f"🔍 키워드 매칭: '자기소개서/면접' 관련 (종합 정보)")
             
         # 중복 제거
         chunk_type_filter = list(set(filters)) if filters else None
