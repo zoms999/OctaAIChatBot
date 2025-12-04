@@ -30,21 +30,30 @@ def get_chat_llm(provider: str | None = None):
 
 # 프롬프트 템플릿
 prompt = ChatPromptTemplate.from_messages([
-    ("system", """당신은 친절하고 명확한 적성검사 결과 상담 챗봇입니다. 
-주어진 [검사 결과]와 [대화 기록]을 바탕으로 사용자의 [질문]에 대해 답변해주세요. 
+    ("system", """당신은 적성검사 결과 상담 전문 챗봇입니다. 
 
-⚠️ 중요: 용어를 정확히 구분하세요!
-- "성향" 또는 "성향 유형" = [성향] 태그가 붙은 내용 (예: 진취형, 창조형, 제작형, 복합형 등)
-- "사고력" 또는 "사고 유형" = [사고력] 태그가 붙은 내용 (예: 창의적사고력, 수직적사고력 등)
-- "역량" 또는 "재능" = [역량] 태그가 붙은 내용 (예: 문서능력, 음악감각 등)
-- "직업" = [직업] 태그가 붙은 내용
+🚨 **절대 규칙** 🚨
+1. **반드시 아래 [검사 결과]에 있는 정보만 사용하세요**
+2. **[검사 결과]에 없는 내용은 절대 답변하지 마세요**
+3. **일반적인 설명이나 추측을 하지 마세요**
+4. **[검사 결과]가 비어있거나 관련 정보가 없으면 "검사 결과에서 해당 정보를 찾을 수 없습니다"라고 답변하세요**
 
-답변 규칙:
-1. 사용자가 "성향"을 물어보면 반드시 [성향] 태그가 붙은 내용만 답변하세요.
-2. 사용자가 "사고력"을 물어보면 [사고력] 태그가 붙은 내용만 답변하세요.
-3. 검사 결과의 태그를 확인하고, 질문에 맞는 태그의 내용만 사용하세요.
-4. 검사 결과에 기반하여 구체적이고 명확하게 답변하세요.
-5. 친근하고 공감적인 톤으로 답변하세요."""),
+📋 **용어 구분**
+- "성향" = [성향] 태그가 붙은 내용만 (예: 진취형, 창조형, 제작형 등)
+- "사고력" = [사고력] 태그가 붙은 내용만 (예: 창의적사고력, 수직적사고력 등)
+- "역량" 또는 "재능" = [역량] 태그가 붙은 내용만
+- "직업" = [직업] 태그가 붙은 내용만
+
+✅ **답변 방법**
+1. [검사 결과]에서 질문과 관련된 태그를 찾으세요
+2. 해당 태그의 내용을 그대로 사용하여 답변하세요
+3. 구체적인 이름, 점수, 순위 등을 정확히 언급하세요
+4. 친근하고 공감적인 톤을 유지하세요
+
+❌ **절대 하지 말 것**
+- 일반적인 성향/사고력 설명을 만들어내지 마세요
+- [검사 결과]에 없는 정보를 추가하지 마세요
+- 다른 태그의 내용을 혼동하지 마세요"""),
     MessagesPlaceholder(variable_name="chat_history"),
     ("human", """--- [검사 결과] ---
 {context}
@@ -52,7 +61,7 @@ prompt = ChatPromptTemplate.from_messages([
 --- [질문] ---
 {question}
 
-답변 시 검사 결과의 태그([성향], [사고력], [역량] 등)를 확인하고, 질문에 맞는 내용만 답변하세요.""")
+위 [검사 결과]에 있는 정보만 사용하여 답변하세요. 결과에 없는 내용은 답변하지 마세요.""")
 ])
 
 
@@ -136,57 +145,81 @@ class CustomRetriever:
         
         # 질문에서 키워드 추출
         question_lower = question.lower()
-        chunk_type_filter = None
+        filters = []
         
-        if '성향' in question:
-            chunk_type_filter = ['top_tendency', 'top_tendency_explain', 'bottom_tendency']
-        elif '사고' in question or '사고력' in question:
-            chunk_type_filter = ['thinking_main', 'thinking_detail']
-        elif '재능' in question or '역량' in question:
-            chunk_type_filter = ['talent']
-        elif '직업' in question:
-            chunk_type_filter = ['suitable_job', 'competency_job', 'duty']
+        # 키워드 매칭 (누적 적용)
+        if '성향' in question or '유형' in question:
+            filters.extend(['top_tendency', 'top_tendency_explain', 'bottom_tendency'])
+            print(f"🔍 키워드 매칭: '성향' 관련")
+            
+        if '사고' in question or '사고력' in question or '사고유형' in question:
+            filters.extend(['thinking_main', 'thinking_detail'])
+            print(f"🔍 키워드 매칭: '사고력' 관련")
+            
+        if '재능' in question or '역량' in question or '능력' in question:
+            filters.extend(['talent'])
+            print(f"🔍 키워드 매칭: '역량' 관련")
+            
+        if '직업' in question or '진로' in question or '직무' in question:
+            filters.extend(['suitable_job', 'competency_job', 'duty'])
+            print(f"🔍 키워드 매칭: '직업' 관련")
+            
+        if '학습' in question or '공부' in question:
+            filters.extend(['learning_style'])
+            print(f"🔍 키워드 매칭: '학습' 관련")
+            
+        # 중복 제거
+        chunk_type_filter = list(set(filters)) if filters else None
+        
+        # 임베딩 생성 (필터링 여부와 관계없이 정렬을 위해 필요)
+        question_embedding = self.embeddings.embed_query(question)
+        embedding_str = '[' + ','.join(map(str, question_embedding)) + ']'
         
         # PostgreSQL에서 검색
         conn = await asyncpg.connect(settings.database_url.replace('postgresql+asyncpg://', 'postgresql://'))
         try:
             if chunk_type_filter:
-                # 키워드 필터링 적용
+                # 키워드 필터링 + 벡터 유사도 정렬
                 rows = await conn.fetch(
                     """
                     SELECT content, metadata, chunk_type
                     FROM report_chunks
                     WHERE anp_seq = $1 AND language_code = $2
                       AND chunk_type = ANY($3)
-                    LIMIT 10
+                    ORDER BY embedding <=> $4::vector
+                    LIMIT 15
                     """,
                     self.anp_seq,
                     self.language_code,
-                    chunk_type_filter
+                    chunk_type_filter,
+                    embedding_str
                 )
+                print(f"📊 키워드 필터링+벡터 검색 결과: {len(rows)}개 청크 검색됨")
             else:
-                # 벡터 검색
-                question_embedding = self.embeddings.embed_query(question)
-                embedding_str = '[' + ','.join(map(str, question_embedding)) + ']'
-                
+                # 순수 벡터 검색 (필터 없음)
                 rows = await conn.fetch(
                     """
                     SELECT content, metadata, chunk_type
                     FROM report_chunks
                     WHERE anp_seq = $1 AND language_code = $2
                     ORDER BY embedding <=> $3::vector
-                    LIMIT 10
+                    LIMIT 15
                     """,
                     self.anp_seq,
                     self.language_code,
                     embedding_str
                 )
+                print(f"📊 전체 벡터 검색 결과: {len(rows)}개 청크 검색됨")
             
             # 디버깅: 검색된 청크 타입 출력
-            print(f"\n=== 검색된 청크 (질문: {question}, 필터: {chunk_type_filter}) ===")
+            print(f"\n{'='*60}")
+            print(f"🔎 질문: {question}")
+            print(f"🎯 적용된 필터: {chunk_type_filter if chunk_type_filter else '없음 (전체 검색)'}")
+            print(f"{'='*60}")
             for i, row in enumerate(rows, 1):
-                print(f"{i}. {row['chunk_type']}: {row['content'][:100]}...")
-            print("=" * 50 + "\n")
+                content_preview = row['content'][:100].replace('\n', ' ')
+                print(f"{i}. [{row['chunk_type']}] {content_preview}...")
+            print(f"{'='*60}\n")
             
             # Document 객체로 변환
             documents = []

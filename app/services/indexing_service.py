@@ -54,7 +54,7 @@ def create_chunks_from_report(report_record: Dict[str, Any]) -> List[ReportChunk
         chunks.append(ReportChunk(
             anp_seq=anp_seq, language_code=lang,
             chunk_type='top_tendency',
-            content=f"[성향] {pname}님의 {tendency.get('rank', '')}순위 주요 성향 유형: {tendency.get('tendency_name', '')}. 이것은 {pname}님의 대표적인 성향입니다.",
+            content=f"[성향] {pname}님의 {tendency.get('rank', '')}순위 주요 성향: {tendency.get('tendency_name', '')}형",
             metadata={'source': 'topTendencies', 'rank': tendency.get('rank'), 'code': tendency.get('code')}
         ))
     
@@ -63,7 +63,7 @@ def create_chunks_from_report(report_record: Dict[str, Any]) -> List[ReportChunk
         chunks.append(ReportChunk(
             anp_seq=anp_seq, language_code=lang,
             chunk_type='top_tendency_explain',
-            content=f"{pname}님의 {tendency_explain.get('rank', '')}순위 성향 '{tendency_explain.get('tendency_name', '')}' 설명: {tendency_explain.get('explanation', '')}",
+            content=f"[성향] {pname}님의 {tendency_explain.get('rank', '')}순위 성향 '{tendency_explain.get('tendency_name', '')}형' 설명:\n{tendency_explain.get('explanation', '')}",
             metadata={'source': 'topTendencyExplains', 'rank': tendency_explain.get('rank')}
         ))
     
@@ -72,7 +72,7 @@ def create_chunks_from_report(report_record: Dict[str, Any]) -> List[ReportChunk
         chunks.append(ReportChunk(
             anp_seq=anp_seq, language_code=lang,
             chunk_type='bottom_tendency',
-            content=f"{pname}님의 하위 성향: {tendency.get('tendency_name', '')} (순위: {tendency.get('rank', '')})",
+            content=f"[성향] {pname}님의 하위 성향 (순위: {tendency.get('rank', '')}): {tendency.get('tendency_name', '')}형",
             metadata={'source': 'bottomTendencies', 'rank': tendency.get('rank')}
         ))
     
@@ -82,7 +82,7 @@ def create_chunks_from_report(report_record: Dict[str, Any]) -> List[ReportChunk
         chunks.append(ReportChunk(
             anp_seq=anp_seq, language_code=lang,
             chunk_type='thinking_main',
-            content=f"[사고력] {pname}님의 주요 사고 유형: {thinking_main.get('thkm', '')}, 보조 사고 유형: {thinking_main.get('thks', '')}. 이것은 사고력에 관한 내용입니다.",
+            content=f"[사고력] {pname}님의 사고 유형:\n- 주요 사고: {thinking_main.get('thkm', '')}\n- 보조 사고: {thinking_main.get('thks', '')}",
             metadata={'source': 'thinkingMain'}
         ))
     
@@ -91,7 +91,7 @@ def create_chunks_from_report(report_record: Dict[str, Any]) -> List[ReportChunk
         chunks.append(ReportChunk(
             anp_seq=anp_seq, language_code=lang,
             chunk_type='thinking_detail',
-            content=f"{pname}님의 '{thinking.get('qua_name', '')}' 사고 능력 (점수: {thinking.get('score', 0)}점): {thinking.get('explain', '')}",
+            content=f"[사고력] {pname}님의 '{thinking.get('qua_name', '')}' (점수: {thinking.get('score', 0)}점):\n{thinking.get('explain', '')}",
             metadata={'source': 'thinkingDetails'}
         ))
     
@@ -100,7 +100,7 @@ def create_chunks_from_report(report_record: Dict[str, Any]) -> List[ReportChunk
         chunks.append(ReportChunk(
             anp_seq=anp_seq, language_code=lang,
             chunk_type='suitable_job',
-            content=f"{pname}님께 추천하는 직업: {job.get('jo_name', '')}. 개요: {job.get('jo_outline', '')}. 주요 업무: {job.get('jo_mainbusiness', '')}",
+            content=f"[직업] {pname}님께 추천하는 직업: {job.get('jo_name', '')}\n개요: {job.get('jo_outline', '')}\n주요 업무: {job.get('jo_mainbusiness', '')}",
             metadata={'source': 'suitableJobsDetail'}
         ))
     
@@ -109,7 +109,7 @@ def create_chunks_from_report(report_record: Dict[str, Any]) -> List[ReportChunk
         chunks.append(ReportChunk(
             anp_seq=anp_seq, language_code=lang,
             chunk_type='talent',
-            content=f"{pname}님의 {talent.get('rank', '')}순위 역량 '{talent.get('qua_name', '')}' (점수: {talent.get('tscore', 0)}점, 백분위: {talent.get('percentile_rank', 0)}%): {talent.get('explain', '')}",
+            content=f"[역량] {pname}님의 {talent.get('rank', '')}순위 역량: '{talent.get('qua_name', '')}' (점수: {talent.get('tscore', 0)}점, 백분위: {talent.get('percentile_rank', 0)}%)\n{talent.get('explain', '')}",
             metadata={'source': 'talentDetails', 'rank': talent.get('rank')}
         ))
     
